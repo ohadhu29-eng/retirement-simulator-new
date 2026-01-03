@@ -78,10 +78,10 @@ const [gender, setGender] = useState("male");
 
   // 4 sources max (as requested)
   const [sources, setSources] = useState([
-  const [taxOnly, setTaxOnly] = useState(false);
-  const [grossMonthlyOverride, setGrossMonthlyOverride] = useState(0);
     { id: "s1", sourceType: "main_pension", fundId: "clal", capital: 0, monthlyOverride: 0, manualCoefficient: 0 },
   ]);
+  const [taxOnly, setTaxOnly] = useState(false);
+  const [grossMonthlyOverride, setGrossMonthlyOverride] = useState(0);
 
   const TAX_YEAR = Number(taxConfig?.year) || new Date().getFullYear();
 
