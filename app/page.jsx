@@ -18,14 +18,6 @@ function computeNonce() {
 }
 
 
-// Safety: avoid build-time ReferenceError during server prerender.
-// If some code path (or a prior edit) references `computeNonce()` without defining it,
-// Next.js will fail the build. Returning an empty string is harmless when CSP nonces
-// aren't required.
-function computeNonce() {
-  return "";
-}
-
 import { useMemo, useState } from "react";
 import coeff from "./data/coefficients.json";
 import taxConfig from "./data/tax_2026.json";
