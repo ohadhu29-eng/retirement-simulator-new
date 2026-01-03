@@ -1,5 +1,31 @@
 "use client";
 
+// Nonce helper (safe in both server & browser builds)
+function computeNonce() {
+  // During Next.js build/prerender there is no window/crypto/btoa.
+  if (typeof window === "undefined") return "";
+  try {
+    const arr = new Uint8Array(16);
+    const c = window.crypto || globalThis.crypto;
+    if (!c || !c.getRandomValues) return "";
+    c.getRandomValues(arr);
+    // base64-ish (URL safe)
+    const b64 = btoa(String.fromCharCode(...arr));
+    return b64.replace(/[^a-zA-Z0-9]/g, "").slice(0, 22);
+  } catch {
+    return "";
+  }
+}
+
+
+// Safety: avoid build-time ReferenceError during server prerender.
+// If some code path (or a prior edit) references `computeNonce()` without defining it,
+// Next.js will fail the build. Returning an empty string is harmless when CSP nonces
+// aren't required.
+function computeNonce() {
+  return "";
+}
+
 import { useMemo, useState } from "react";
 import coeff from "./data/coefficients.json";
 import taxConfig from "./data/tax_2026.json";
@@ -41,7 +67,10 @@ function getCoefficient({ fundId, sourceType, gender, retirementAge, spouseKey, 
 
 
 export default function Page() {
-  const [gender, setGender] = useState("male");
+  
+  // ensure nonce helper is defined (prevents build-time ReferenceError)
+  const __nonce = computeNonce();
+const [gender, setGender] = useState("male");
   const [birthYear, setBirthYear] = useState(1965);
   const [retirementAge, setRetirementAge] = useState(67);
   const [taxCreditPoints, setTaxCreditPoints] = useState(2.25);
@@ -192,21 +221,12 @@ export default function Page() {
 
           <h3 style={{ marginTop: 0 }}>מקורות קצבה (עד 4)</h3>
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 10 }}>
-          <button onClick={addSource} disabled={sources.length >= 4} style={{ padding: "8px 10px", marginBottom: 10 }}>
-            ➕ הוסף מקור קצבה
-          </button>
-          <button
-            onClick={() => setComputeNonce((n) => n + 1)}
-            style={{ padding: "8px 14px", fontWeight: 800, marginBottom: 10 }}
-            title={"חשב מחדש"}
-          >
-            חשב
-          </button>
-          {computeNonce === 0 && (
+            <button onClick={addSource} disabled={sources.length >= 4} style={{ padding: "8px 10px", marginBottom: 10 }}>
+              ➕ הוסף מקור קצבה
+            </button>
             <div style={{ fontSize: 12, color: "#666", alignSelf: "center" }}>
-              הזן נתונים ולחץ <strong>חשב</strong> כדי לעדכן את התוצאות.
+              החישוב מתעדכן אוטומטית בכל שינוי שדה.
             </div>
-          )}
           </div>
 
           {sourcesWithCoef.map((s) => (
