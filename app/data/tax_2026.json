@@ -31,9 +31,8 @@
   "surtax": {
     "threshold_monthly": 60130,
     "rate": 0.03
-  },
-  "pension_exemption": {
-    "qualifying_pension_ceiling": 9430,
-    "default_exemption_rate": 0.575
-  }
+  },"pension_exemption": {
+  "monthly_exempt_ceiling": 9430,
+  "qualifying_pension_ceiling": 9430,
+  "default_exemption_rate": 0.575
 }
