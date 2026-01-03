@@ -63,12 +63,13 @@ export default function Page() {
   // ensure nonce helper is defined (prevents build-time ReferenceError)
   const __nonce = computeNonce();
 const [gender, setGender] = useState("male");
-  const [birthYear, setBirthYear] = useState(1965);
+  const [birthYear, setBirthYear] = useState("");
+  const [birthYearAuto, setBirthYearAuto] = useState(true);
   const [retirementAge, setRetirementAge] = useState(67);
   const [taxCreditPoints, setTaxCreditPoints] = useState(2.25);
   const [additionalIncomeMonthly, setAdditionalIncomeMonthly] = useState(0);
 
-  const [hasSpouse, setHasSpouse] = useState(true);
+  const [hasSpouse, setHasSpouse] = useState(false);
   const [guaranteeMonths, setGuaranteeMonths] = useState(0);
   const [spousePercent, setSpousePercent] = useState(60);
 
@@ -77,8 +78,31 @@ const [gender, setGender] = useState("male");
 
   // 4 sources max (as requested)
   const [sources, setSources] = useState([
-    { id: "s1", sourceType: "main_pension", fundId: "clal", capital: 1800000, monthlyOverride: 0, manualCoefficient: 0 },
+    { id: "s1", sourceType: "main_pension", fundId: "clal", capital: 0, monthlyOverride: 0, manualCoefficient: 0 },
   ]);
+
+  const TAX_YEAR = Number(taxConfig?.year) || new Date().getFullYear();
+
+  // Keep "שנת לידה" and "גיל פרישה" in sync.
+  // Default behavior: birth year auto-follows retirement age until the user edits birth year manually.
+  useEffect(() => {
+    if (!birthYearAuto) return;
+    const ageNum = Number(retirementAge);
+    if (!Number.isFinite(ageNum) || ageNum <= 0) return;
+    const by = TAX_YEAR - ageNum;
+    if (Number.isFinite(by) && by > 1900 && by < 2100) setBirthYear(String(by));
+  }, [retirementAge, birthYearAuto, TAX_YEAR]);
+
+  const onBirthYearChange = (val) => {
+    setBirthYear(val);
+    setBirthYearAuto(false);
+    const by = Number(val);
+    if (Number.isFinite(by) && by > 1900 && by < 2100) {
+      const age = TAX_YEAR - by;
+      if (Number.isFinite(age) && age > 0 && age < 120) setRetirementAge(age);
+    }
+  };
+
 
   // חישוב אוטומטי: התוצאות מתעדכנות מיד בכל שינוי שדה.
 
