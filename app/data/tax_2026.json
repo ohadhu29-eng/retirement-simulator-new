@@ -1,0 +1,15 @@
+{
+  "year": 2026,
+  "note": "יש לעדכן ערכים לפי פרסום רשמי לשנת 2026 (מדרגות מס וערך נקודת זיכוי).",
+  "credit_point_value": null,
+  "brackets_monthly": [
+    {
+      "up_to": null,
+      "rate": null
+    }
+  ],
+  "pension_exemption": {
+    "monthly_exempt_ceiling": null,
+    "default_exemption_rate": 0.52
+  }
+}
