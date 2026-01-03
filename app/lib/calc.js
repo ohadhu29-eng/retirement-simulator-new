@@ -67,12 +67,15 @@ export function computeSimulation({
   sources, // [{sourceType, capital, coefficient}]
   rightsFixationEnabled,
   exemptionRate,
+  taxOnly = false,
+  grossMonthlyOverride = 0,
 }) {
   const monthlyBySource = sources.map(s => ({
     ...s,
     monthly: calcMonthlyPension(s),
   }));
-  const grossPension = monthlyBySource.reduce((a,b)=>a + b.monthly, 0);
+  const computedGrossPension = monthlyBySource.reduce((a,b)=>a + b.monthly, 0);
+  const grossPension = (Number(grossMonthlyOverride) > 0) ? Number(grossMonthlyOverride) : computedGrossPension;
 
   const fixationAllowed = canFixRights({ gender, retirementAge });
   const effectiveFixation = Boolean(rightsFixationEnabled && fixationAllowed);

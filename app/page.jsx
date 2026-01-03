@@ -78,6 +78,8 @@ const [gender, setGender] = useState("male");
 
   // 4 sources max (as requested)
   const [sources, setSources] = useState([
+  const [taxOnly, setTaxOnly] = useState(false);
+  const [grossMonthlyOverride, setGrossMonthlyOverride] = useState(0);
     { id: "s1", sourceType: "main_pension", fundId: "clal", capital: 0, monthlyOverride: 0, manualCoefficient: 0 },
   ]);
 
@@ -92,6 +94,13 @@ const [gender, setGender] = useState("male");
     const by = TAX_YEAR - ageNum;
     if (Number.isFinite(by) && by > 1900 && by < 2100) setBirthYear(String(by));
   }, [retirementAge, birthYearAuto, TAX_YEAR]);
+
+  // Auto-disable tax-only mode if there is any capital entered
+  useEffect(() => {
+    const totalCapital = sources.reduce((sum, s) => sum + (Number(s.capital) || 0), 0);
+    if (taxOnly && totalCapital > 0) setTaxOnly(false);
+  }, [sources, taxOnly]);
+
 
   const onBirthYearChange = (val) => {
     setBirthYear(val);
@@ -210,7 +219,29 @@ const [gender, setGender] = useState("male");
             </label>
           </div>
 
-          <hr style={{ margin: "16px 0" }} />
+          
+          <label style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 10 }}>
+            <input
+              type="checkbox"
+              checked={taxOnly}
+              onChange={(e) => setTaxOnly(e.target.checked)}
+            />
+            אין לי צבירה / רוצה לחשב מס בלבד
+          </label>
+
+          {(taxOnly || sources.reduce((sum, s) => sum + (Number(s.capital) || 0), 0) === 0) && (
+            <label style={{ marginTop: 10 }}>
+              קצבה חודשית משוערת (הזנה ידנית)
+              <input
+                type="number"
+                value={grossMonthlyOverride}
+                onChange={(e) => setGrossMonthlyOverride(Number(e.target.value))}
+                style={{ width: "100%", padding: 8 }}
+              />
+            </label>
+          )}
+
+<hr style={{ margin: "16px 0" }} />
 
           <h3 style={{ marginTop: 0 }}>פרמטרים לבחירת מקדם</h3>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
@@ -268,6 +299,7 @@ const [gender, setGender] = useState("male");
                     style={{ width: "100%", padding: 8 }} />
                 </label>
 
+                {(taxOnly || (Number(s.capital) || 0) === 0) && (
                 <label>
                   קצבה חודשית משוערת (הזנה ידנית)
                   <input
@@ -281,6 +313,7 @@ const [gender, setGender] = useState("male");
                     אם הזנת כאן סכום &mdash; המערכת תשתמש בו במקום חישוב צבירה/מקדם.
                   </div>
                 </label>
+                )}
 
                 <label>
                   מקדם קצבה (אוטומטי)
