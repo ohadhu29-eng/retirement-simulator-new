@@ -18,7 +18,7 @@ function computeNonce() {
 }
 
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import coeff from "./data/coefficients.json";
 import taxConfig from "./data/tax_2026.json";
 import { buildSpouseKey, canFixRights, computeSimulation, validateTaxConfig } from "./lib/calc";
