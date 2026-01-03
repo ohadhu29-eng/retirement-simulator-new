@@ -56,7 +56,7 @@ export default function Page() {
 
   // 4 sources max (as requested)
   const [sources, setSources] = useState([
-    { id: "s1", sourceType: "main_pension", fundId: "clal", capital: 1800000 },
+    { id: "s1", sourceType: "main_pension", fundId: "clal", capital: 1800000, monthlyOverride: undefined, manualCoefficient: 0 },
   ]);
 
   const spouseKey = useMemo(() => buildSpouseKey({ hasSpouse, guaranteeMonths, spousePercent }), [hasSpouse, guaranteeMonths, spousePercent]);
@@ -66,27 +66,47 @@ export default function Page() {
   function addSource() {
     if (sources.length >= 4) return;
     const nextType = ["supp_pension","exec_ins","gemel_invest"].find(t => !sources.some(s => s.sourceType === t)) || "supp_pension";
-    setSources(prev => [...prev, { id: `s${Date.now()}`, sourceType: nextType, fundId: "clal", capital: 0 }]);
+    setSources(prev => [...prev, { id: `s${Date.now()}`, sourceType: nextType, fundId: "clal", capital: 0, monthlyOverride: undefined, manualCoefficient: 0 }]);
   }
   function removeSource(id) { setSources(prev => prev.filter(s => s.id !== id)); }
   function updateSource(id, patch) { setSources(prev => prev.map(s => s.id === id ? { ...s, ...patch } : s)); }
 
-  const sourcesWithCoef = useMemo(() => sources.map(s => ({
-    ...s,
-    coefficient: getCoefficient({ fundId: s.fundId, sourceType: s.sourceType, gender, retirementAge, spouseKey, birthYear })
-  })), [sources, gender, retirementAge, spouseKey]);
+  const sourcesWithCoef = useMemo(() => sources.map(s => {
+    const auto = getCoefficient({ fundId: s.fundId, sourceType: s.sourceType, gender, retirementAge, spouseKey, birthYear });
+    const manual = Number(s.manualCoefficient) || 0;
+    return {
+      ...s,
+      coefficient: (auto ?? null),
+      effectiveCoefficient: (auto ?? null) || (manual > 0 ? manual : 0),
+    };
+  }), [sources, gender, retirementAge, spouseKey, birthYear]);
 
   const sim = useMemo(() => {
+    if (0 === 0) {
+      return {
+        monthlyGross: 0,
+        monthlyAfterExemption: 0,
+        monthlyTax: 0,
+        monthlyNet: 0,
+        monthlyBySource: sources.map((s) => ({ sourceId: s.id, monthly: 0 }))
+      };
+    }
     return computeSimulation({
       gender,
       retirementAge,
       taxCreditPoints,
       additionalIncomeMonthly,
-      sources: sourcesWithCoef.map(s => ({ sourceType: s.sourceType, capital: s.capital, coefficient: s.coefficient || 0 })),
+      sources: sourcesWithCoef.map(s => ({
+        sourceType: s.sourceType,
+        capital: s.capital,
+        coefficient: s.effectiveCoefficient || 0,
+        monthlyOverride: s.monthlyOverride,
+      })),
       rightsFixationEnabled,
       exemptionRate: Number(exemptionRate)
     });
-  }, [gender, retirementAge, taxCreditPoints, additionalIncomeMonthly, sourcesWithCoef, rightsFixationEnabled, exemptionRate]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [0]);
 
   return (
     <div style={{ maxWidth: 1220, margin: "0 auto", padding: 18 }}>
@@ -95,80 +115,8 @@ export default function Page() {
           <h1 style={{ margin: 0 }}>אפליקציית סימולציות פרישה</h1>
           <div style={{ color: "#555", marginTop: 4 }}>מקדמים אוטומטיים • מס • קיבוע זכויות • 4 מקורות קצבה • PDF</div>
         </div>
-        <button
-          onClick={() => window.print()}
-          style={{ padding: "10px 14px", borderRadius: 8, border: "1px solid #ddd", background: "#fff", cursor: "pointer" }}
-        >
-          הפק PDF (הדפס/שמירה)
-        </button>
-      </header>
-
-      {taxErrors.length > 0 && (
-        <div style={{ marginTop: 12, background: "#fff3cd", border: "1px solid #ffeeba", padding: 12, borderRadius: 10 }}>
-          <strong>שימו לב:</strong> כדי שחישוב המס יהיה \"עדכני לשנת 2026\", יש לעדכן את הקובץ <code>app/data/tax_2026.json</code>.
-          <ul style={{ margin: "8px 0 0 0" }}>
-            {taxErrors.map((e,i)=><li key={i}>{e}</li>)}
-          </ul>
-        </div>
-      )}
-
-      <div style={{ display: "grid", gridTemplateColumns: "1.1fr 0.9fr", gap: 16, marginTop: 16 }}>
-        <section style={{ background: "#fff", border: "1px solid #eee", borderRadius: 12, padding: 16 }}>
-          <h2 style={{ marginTop: 0 }}>נתוני לקוח</h2>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-            <label>
-              מין
-              <select value={gender} onChange={(e) => setGender(e.target.value)} style={{ width: "100%", padding: 8 }}>
-                <option value="male">זכר</option>
-                <option value="female">נקבה</option>
-              </select>
-            </label>
-            <label>
-              גיל פרישה
-              <input type="number" min={50} max={80} value={retirementAge} onChange={(e) => setRetirementAge(Number(e.target.value))}
-                style={{ width: "100%", padding: 8 }} />
-            </label>
-            <label>
-              נקודות זיכוי
-              <input type="number" step="0.25" value={taxCreditPoints} onChange={(e) => setTaxCreditPoints(Number(e.target.value))}
-                style={{ width: "100%", padding: 8 }} />
-            </label>
-            <label>
-              הכנסה חודשית נוספת (ברוטו)
-              <input type="number" value={additionalIncomeMonthly} onChange={(e) => setAdditionalIncomeMonthly(Number(e.target.value))}
-                style={{ width: "100%", padding: 8 }} />
-            </label>
-          </div>
-
-          <hr style={{ margin: "16px 0" }} />
-
-          <h3 style={{ marginTop: 0 }}>פרמטרים לבחירת מקדם</h3>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
-            <label style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <input type="checkbox" checked={hasSpouse} onChange={(e)=>setHasSpouse(e.target.checked)} />
-              יש/אין בן/בת זוג
-            </label>
-            <label>
-              חודשי הבטחה לבן/בת זוג
-              <input type="number" min={0} value={guaranteeMonths} disabled={!hasSpouse}
-                onChange={(e)=>setGuaranteeMonths(Number(e.target.value))} style={{ width: "100%", padding: 8 }} />
-            </label>
-            <label>
-              אחוז הבטחה לבן/בת זוג
-              <input type="number" min={0} max={100} value={spousePercent} disabled={!hasSpouse}
-                onChange={(e)=>setSpousePercent(Number(e.target.value))} style={{ width: "100%", padding: 8 }} />
-            </label>
-          </div>
-          <div style={{ fontSize: 12, color: "#666", marginTop: 6 }}>
-            הערה: התאמת המקדם תלויה בטבלאות שנטענו מהתקנונים. אם אין נתון תוצג הודעה \"אין מקדם\".
-          </div>
-
-          <hr style={{ margin: "16px 0" }} />
-
-          <h3 style={{ marginTop: 0 }}>מקורות קצבה (עד 4)</h3>
-          <button onClick={addSource} disabled={sources.length >= 4} style={{ padding: "8px 10px", marginBottom: 10 }}>
-            ➕ הוסף מקור קצבה
-          </button>
+        
+</div>
 
           {sourcesWithCoef.map((s) => (
             <div key={s.id} style={{ border: "1px solid #eee", borderRadius: 10, padding: 12, marginBottom: 10 }}>
@@ -194,6 +142,20 @@ export default function Page() {
                 </label>
 
                 <label>
+                  קצבה חודשית משוערת
+                  <input
+                    type="number"
+                    value={s.monthlyOverride ?? ""}
+                    onChange={(e) => updateSource(s.id, { monthlyOverride: Number(e.target.value) })}
+                    placeholder="למשל 8000"
+                    style={{ width: "100%", padding: 8 }}
+                  />
+                  <div style={{ fontSize: 12, color: "#666", marginTop: 4 }}>
+                    אם הזנת כאן סכום &mdash; המערכת תשתמש בו במקום חישוב צבירה/מקדם.
+                  </div>
+                </label>
+
+                <label>
                   מקדם קצבה (אוטומטי)
                   <input
                     type="number"
@@ -207,10 +169,24 @@ export default function Page() {
                   </div>
                 </label>
 
+                <label>
+                  מקדם קצבה (הזנה ידנית)
+                  <input
+                    type="number"
+                    value={s.manualCoefficient ?? 0}
+                    onChange={(e) => updateSource(s.id, { manualCoefficient: Number(e.target.value) })}
+                    placeholder="אם אין מקדם אוטומטי"
+                    style={{ width: "100%", padding: 8 }}
+                  />
+                  <div style={{ fontSize: 12, color: "#666", marginTop: 4 }}>
+                    אם הזנת מקדם ידני &mdash; הוא יגבר על המקדם האוטומטי.
+                  </div>
+                </label>
+
                 <div>
-                  <div style={{ fontSize: 12, color: "#666" }}>קצבה חודשית משוערת</div>
+                  <div style={{ fontSize: 12, color: "#666" }}>קצבה חודשית מחושבת (אחרי מקדם)</div>
                   <div style={{ fontSize: 18, fontWeight: 800 }}>
-                    {nfmt(sim.monthlyBySource.find(x => x.sourceType === s.sourceType)?.monthly ?? 0)} ₪
+                    {nfmt(sim.monthlyBySource.find(x => x.sourceId === s.id)?.monthly ?? 0)} ₪
                   </div>
                 </div>
               </div>

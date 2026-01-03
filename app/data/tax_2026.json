@@ -1,20 +1,38 @@
 {
   "year": 2026,
+  "note": "מדרגות המס ונקודת הזיכוי מבוססים על לוח ניכויים חודשי ינואר 2025 של רשות המסים. לפי חוק ההתייעלות הכלכלית (2024) נקבעה הקפאה של עדכוני מס לשנים 2025–2027, ולכן משמשים כאן גם לשנת 2026 (עד לפרסום עדכון רשמי חדש).",
   "credit_point_value": 242,
   "brackets_monthly": [
-    { "up_to": 7010, "rate": 0.1 },
-    { "up_to": 10060, "rate": 0.14 },
-    { "up_to": 16150, "rate": 0.2 },
-    { "up_to": 22440, "rate": 0.31 },
-    { "up_to": 46690, "rate": 0.35 },
-    { "up_to": null, "rate": 0.47 }
+    {
+      "up_to": 7010,
+      "rate": 0.1
+    },
+    {
+      "up_to": 10060,
+      "rate": 0.14
+    },
+    {
+      "up_to": 16150,
+      "rate": 0.2
+    },
+    {
+      "up_to": 22440,
+      "rate": 0.31
+    },
+    {
+      "up_to": 46690,
+      "rate": 0.35
+    },
+    {
+      "up_to": null,
+      "rate": 0.47
+    }
   ],
   "surtax": {
     "threshold_monthly": 60130,
     "rate": 0.03
   },
   "pension_exemption": {
-    "monthly_exempt_ceiling": 9430,
     "qualifying_pension_ceiling": 9430,
     "default_exemption_rate": 0.575
   }

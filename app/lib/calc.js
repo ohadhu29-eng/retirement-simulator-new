@@ -6,9 +6,14 @@ export function canFixRights({ gender, retirementAge }) {
   return age >= 67;
 }
 
-export function calcMonthlyPension(capital, coefficient) {
-  const cap = Number(capital) || 0;
-  const coef = Number(coefficient) || 0;
+export function calcMonthlyPension(source) {
+  // Priority 1: direct user-entered monthly pension estimate.
+  const override = Number(source?.monthlyOverride);
+  if (Number.isFinite(override) && override > 0) return override;
+
+  // Priority 2: derive from capital / coefficient.
+  const cap = Number(source?.capital) || 0;
+  const coef = Number(source?.coefficient) || 0;
   if (!coef) return 0;
   return cap / coef;
 }
@@ -65,7 +70,7 @@ export function computeSimulation({
 }) {
   const monthlyBySource = sources.map(s => ({
     ...s,
-    monthly: calcMonthlyPension(s.capital, s.coefficient),
+    monthly: calcMonthlyPension(s),
   }));
   const grossPension = monthlyBySource.reduce((a,b)=>a + b.monthly, 0);
 
